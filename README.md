@@ -1,4 +1,4 @@
-This is a tool I have built for running a python webapp locally on a PC. This webapp predicts genres and similar movies based on a given movie plot summary input
+## This is a tool I have built for running a python webapp locally on a PC. This webapp predicts genres and similar movies based on a given movie plot summary input
 
 1.) Open a command prompt window and run the following: python -m pip install -r 'requirements.txt'
 2.) Download data.tsv and ratings.tsv from https://drive.google.com/drive/folders/1jUrP8IFY0EKDNt7jXioHsVihG3hn83wt?usp=sharing and put both in the IMDb_Movie_Predictors folder
