@@ -1,6 +1,4 @@
 import pandas as pd
-import numpy as np
-import json
 import contractions
 import re
 from sklearn.model_selection import train_test_split
@@ -10,10 +8,7 @@ from sklearn.multiclass import OneVsRestClassifier
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import f1_score,precision_score,recall_score,accuracy_score,hamming_loss
 from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import KNeighborsClassifier
-import time
-from sklearn import utils
 from gensim.parsing.preprocessing import remove_stopwords
 import pickle
 
@@ -43,28 +38,26 @@ meta_movies = meta_movies.drop('index', axis=1)
 
 meta_movies['startYear'] = [int(meta_movies['startYear'][i]) for i in range(len(meta_movies['startYear']))]
 
-meta_movies = meta_movies[(meta_movies['startYear'] >= 2000) & (meta_movies['startYear'] <= 2009)]
+meta_movies = meta_movies[meta_movies['startYear'] >= 1970]
 meta_movies = meta_movies.reset_index()
 meta_movies = meta_movies.drop('index', axis=1)
 
-movie_ids_90s = meta_movies['tconst']
+ratings = pd.read_csv('../../../ratings.tsv', sep = '\t')
+
+movie_ratings = meta_movies.merge(ratings, on = 'tconst')
+movie_ratings = movie_ratings[movie_ratings['numVotes'] > 500]
+movie_ratings = movie_ratings.reset_index(drop=True)
+
+movie_ids_all = movie_ratings['tconst']
 
 movie_plts = pd.read_csv('../../IMDb-Scraper/bot/movie_plots.csv')
 plots = []
 for i in movie_plts['movie_plots']:
     plots.append(str(i))
 
-tmp_movies = meta_movies.head(len(plots))
+movie_ratings = movie_ratings.head(len(plots))
 
-tmp_movies['plots'] = plots
-
-ratings = pd.read_csv('../../../ratings.tsv', sep = '\t')
-
-movie_ratings = tmp_movies.merge(ratings, on = 'tconst')
-
-bad = []
-for i in range(movie_ratings.shape[0]):
-    bad.append(re.findall(r"^\bIt looks like we don't have\b.+",movie_ratings['plots'][i]))
+movie_ratings['plots'] = plots
 
 plots_new = []
 for i in range(movie_ratings.shape[0]):
@@ -159,7 +152,3 @@ pickle.dump(classifier, open(filename, 'wb'))
 
 filename = '../../Movie-Predictor/src/static/KNN.pickle'
 pickle.dump(KNN, open(filename, 'wb'))
-
-
-
-

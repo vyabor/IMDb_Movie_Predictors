@@ -19,7 +19,7 @@ class QuotesSpider(scrapy.Spider):
     def parse(self, response):
         movie_plots = movie_plotsItem()
         movie_plots['movie_plots'] = []
-        tmp = list(movie_plots['movie_plots'])
+        #tmp = list(movie_plots['movie_plots'])
         
         html = [' '.join(line.strip() for line in p.xpath(".//text()").extract() if line.strip()) for p in response.xpath("//p")]
         no_plot = 'It looks like we don\'t have any Plot Summaries for this title yet. Be the first to contribute! Just click the "Edit page" button at the bottom of the page or learn more in the Plot Summary submission guide .'
@@ -27,6 +27,8 @@ class QuotesSpider(scrapy.Spider):
         related = 'Related lists from IMDb users'
         copy = '© 1990- 2022 by IMDb.com, Inc.'
         tags = 'Taglines | Synopsis | Plot Keywords | Parents Guide'
+        
+        tmp = []
         
         if((no_plot not in html) and (no_syn not in html) and (related in html) and (copy in html) and (tags in html)):
             tmp.append(max(html[:len(html) - 3], key = len))
@@ -67,6 +69,6 @@ class QuotesSpider(scrapy.Spider):
         else:
             tmp.append(max(html[:len(html) - 4], key = len))
 
-        movie_plots['movie_plots'] = tmp
+        #movie_plots['movie_plots'] = tmp
 
-        yield movie_plots
+        yield {'movie_plots':tmp}

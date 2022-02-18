@@ -1,2 +1,0 @@
-This scrapy bot (slowly, or else you get a temp block from IMDb) crawls through every movie in the IMDb website and pulls the longest plot summary into movie_plots.csv
-To run: execute command 'scrapy crawl quotes -o movie_plots.csv'
