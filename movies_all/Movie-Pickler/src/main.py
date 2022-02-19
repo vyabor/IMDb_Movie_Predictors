@@ -45,7 +45,7 @@ meta_movies = meta_movies.drop('index', axis=1)
 ratings = pd.read_csv('../../../ratings.tsv', sep = '\t')
 
 movie_ratings = meta_movies.merge(ratings, on = 'tconst')
-movie_ratings = movie_ratings[movie_ratings['numVotes'] > 500]
+movie_ratings = movie_ratings[movie_ratings['numVotes'] > 1500]
 movie_ratings = movie_ratings.reset_index(drop=True)
 
 movie_ids_all = movie_ratings['tconst']
