@@ -156,26 +156,51 @@ def movie_predictor():
         
         elif((data["Plot"] == "") and (data["Title"] != "")):
             title=data['Title']
-            recommended_movies = []
-            if(title in list(indices)):
-                idx = indices[indices == title].index[0]
+            if(movie_ratings[movie_ratings['primaryTitle'] == title].shape[0] > 1):
+                popup(f"There is more than one movie with the title {title}. Please specify the year!")
+                startYear = select(options = movie_ratings[movie_ratings['primaryTitle'] == title]['startYear'])
+                idx = movie_ratings[(movie_ratings['primaryTitle'] == title) & (movie_ratings['startYear'] == startYear)].index[0]
                 score_series = pd.Series(cos_sim[idx]).sort_values(ascending = False)
                 top_index = list(score_series.iloc[1:6].index)
+                names = []
+                genre = []
+                year = []
+                rating = []
                 for i in top_index:
-                    recommended_movies.append(list(movie_ratings['primaryTitle'])[i])
-                recommended_movies = pd.DataFrame({"Similar Movies":recommended_movies})
-                popup(f"Similar Movies to {data['Title']}:", put_table(tdata = recommended_movies.values.tolist()))
+                    names.append(list(movie_ratings['primaryTitle'])[i])
+                    genre.append(list(movie_ratings['genres'])[i])
+                    year.append(list(movie_ratings['startYear'])[i])
+                    rating.append(list(movie_ratings['averageRating'])[i])
+                recommended_movies = pd.DataFrame({"Similar Movies":names, "Genres":genre, "Year":year, "Rating":rating})
+                popup(f"Similar Movies to {data['Title']}:", put_table(tdata = recommended_movies.values.tolist(), header = ["Similar Movies", "Genres", "Year", "Rating"]))
                 actions(buttons=["Refresh the page"])
                 pywebio.session.run_js('window.location.reload()')
-                raise fragile.Break
                 return recommended_movies
             else:
-                recommended_movies = pd.DataFrame({"Similar Movies":["nothing"]})
-                put_text("That title is not in the database. Try again!")
-                actions(buttons=["Refresh the page"])
-                pywebio.session.run_js('window.location.reload()')
-                raise fragile.Break
-                return recommended_movies
+                names = []
+                genre = []
+                year = []
+                rating = []
+                if(title in list(indices)):
+                    idx = indices[indices == title].index[0]
+                    score_series = pd.Series(cos_sim[idx]).sort_values(ascending = False)
+                    top_index = list(score_series.iloc[1:6].index)
+                    for i in top_index:
+                        names.append(list(movie_ratings['primaryTitle'])[i])
+                        genre.append(list(movie_ratings['genres'])[i])
+                        year.append(list(movie_ratings['startYear'])[i])
+                        rating.append(list(movie_ratings['averageRating'])[i])
+                    recommended_movies = pd.DataFrame({"Similar Movies":names, "Genres":genre, "Year":year, "Rating":rating})
+                    popup(f"Similar Movies to {data['Title']}:", put_table(tdata = recommended_movies.values.tolist(), header = ["Similar Movies", "Genres", "Year", "Rating"]))
+                    actions(buttons=["Refresh the page"])
+                    pywebio.session.run_js('window.location.reload()')
+                    return recommended_movies
+                else:
+                    recommended_movies = pd.DataFrame({"Similar Movies":["nothing"]})
+                    put_text("That title is not in the database. Try again!")
+                    actions(buttons=["Refresh the page"])
+                    pywebio.session.run_js('window.location.reload()')
+                    return recommended_movies
                     
         elif((data["Plot"] != "") and (data["Title"] != "")):
             put_text("You have to choose either a plot or title input. Not both!")
