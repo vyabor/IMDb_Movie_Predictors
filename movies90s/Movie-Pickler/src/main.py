@@ -103,13 +103,10 @@ multilabel_binarizer_similar = MultiLabelBinarizer()
 Y = [[movie_ratings['tconst'][i]] for i in range(len(movie_ratings['tconst']))]
 Y = multilabel_binarizer_similar.fit_transform(Y)
 x = movie_ratings['plots_clean']
-vectorizer2 = TfidfVectorizer()
+vectorizer2 = TfidfVectorizer(ngram_range = (2,3))
 x_names = vectorizer2.fit_transform(x)
 KNN = KNeighborsClassifier(5, n_jobs = -1, metric = 'cosine')
 KNN.fit(x_names, Y)
-
-cos_sim = cosine_similarity(x_names, x_names)
-indices = pd.Series(movie_ratings['primaryTitle'])
 
 preds_log = classifier.predict_proba(x_test_vec)
 preds_new = (preds_log >= 0.45).astype(int)
@@ -126,29 +123,23 @@ print('Macro Precision:', precision_score(y_test, preds_new, average = 'macro'))
 print('Macro Recall:', recall_score(y_test, preds_new, average = 'macro'))
 print('Macro F1:', f1_score(y_test, preds_new, average = 'macro'))
 
-filename = '../../Movie-Predictor/src/static/tfidf_vec.pickle'
+filename = '../../Movie-Predictor/static/tfidf_vec.pickle'
 pickle.dump(tfidf_vec, open(filename, 'wb'))
 
-filename = '../../Movie-Predictor/src/static/multilabel_binarizer.pickle'
+filename = '../../Movie-Predictor/static/multilabel_binarizer.pickle'
 pickle.dump(multilabel_binarizer, open(filename, 'wb'))
 
-filename = '../../Movie-Predictor/src/static/vectorizer2.pickle'
+filename = '../../Movie-Predictor/static/vectorizer2.pickle'
 pickle.dump(vectorizer2, open(filename, 'wb'))
 
-filename = '../../Movie-Predictor/src/static/multilabel_binarizer_similar.pickle'
+filename = '../../Movie-Predictor/static/multilabel_binarizer_similar.pickle'
 pickle.dump(multilabel_binarizer_similar, open(filename, 'wb'))
 
-filename = '../../Movie-Predictor/src/static/cos_sim.pickle'
-pickle.dump(cos_sim, open(filename, 'wb'))
-
-filename = '../../Movie-Predictor/src/static/indices.pickle'
-pickle.dump(indices, open(filename, 'wb'))
-
-filename = '../../Movie-Predictor/src/static/movie_ratings.pickle'
+filename = '../../Movie-Predictor/static/movie_ratings.pickle'
 pickle.dump(movie_ratings, open(filename, 'wb'))
 
-filename = '../../Movie-Predictor/src/static/classifier.pickle'
+filename = '../../Movie-Predictor/static/classifier.pickle'
 pickle.dump(classifier, open(filename, 'wb'))
 
-filename = '../../Movie-Predictor/src/static/KNN.pickle'
+filename = '../../Movie-Predictor/static/KNN.pickle'
 pickle.dump(KNN, open(filename, 'wb'))

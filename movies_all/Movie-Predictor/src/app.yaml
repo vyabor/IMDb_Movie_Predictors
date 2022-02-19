@@ -1,6 +1,0 @@
-runtime: python38
-entrypoint: gunicorn -b :$PORT main:app
-resources:
-  cpu: 2.0
-  memory_gb: 4.0
-  disk_size_gb: 10
