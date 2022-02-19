@@ -4,13 +4,11 @@ import contractions
 import re
 from gensim.parsing.preprocessing import remove_stopwords
 import pickle
-
-from flask import Flask
 from pywebio.input import *
 from pywebio.output import *
 from pywebio.exceptions import *
 import pywebio
-
+import argparse
 import os
 from settings import APP_STATIC
 
@@ -41,131 +39,146 @@ def word_cleaner(text):
     text = ' '.join(text.split())
     return(text)
 
-class fragile(object):
-    class Break(Exception):
-      """Break out of the with statement"""
-
-    def __init__(self, value):
-        self.value = value
-
-    def __enter__(self):
-        return self.value.__enter__()
-
-    def __exit__(self, etype, value, traceback):
-        error = self.value.__exit__(etype, value, traceback)
-        if etype == self.Break:
-            return True
-        return error
-
-app = Flask(__name__)
-@app.route("/")
+pywebio.config(theme = 'dark')
 def movie_predictor():
     
-    pywebio.config(theme = 'dark')
-    #pywebio.session.run_js('WebIO._state.CurrentSession.on_session_close(()=>{setTimeout(()=>location.reload(), 4000})')
-    data = input_group("You can either input your own plot or the title of a movie", [textarea("Movie plot summary goes here! (25 character minimum)", required = False, name = "Plot"), input("Or Movie Title!", name = "Title", required = False)])
-    with fragile(put_loading(shape = 'border', color = 'primary')):
-        if((data["Plot"] != "") and (data["Title"] == "")):
+    put_text("This is a free and fun tool made with Python where people can make up a movie plot and find similar 80's movies.")
+    put_text("Or if you want, you can type in a 80's movie title and see what other 80's movies in the database are similar based on its plot.")
+    put_text("Thanks for checking the site out!")
+    put_text("Other decades:")
+    put_link("70s", "https://movie-predictor-70s-5xlhowa54q-ue.a.run.app", new_window = True)
+    put_text("")
+    put_link("90s", "https://movie-predictor-90s-xxqp3o6xna-ue.a.run.app", new_window = True)
+    put_text("")
+    put_link("2000's", "https://movie-predictor-00s-yxpwksz6pa-ue.a.run.app", new_window = True)
+    put_text("")
+    put_link("2010's", "https://movie-predictor-10s-7sycrvxa2a-ue.a.run.app", new_window = True)
+    put_text("")
+    put_link("All decades", "https://movie-predictor-bdym5mncmq-ue.a.run.app", new_window = True)
+    put_text("© 2022 Vincent Yabor")
     
-            result = pd.DataFrame({'Predicted Genre':[],'Predicted Genre Score':[]})
-            similar_movies = pd.DataFrame({'Similar Movies':[], 'Genres':[], 'Year':[], 'Rating':[]})
-            
-            plot_input = data['Plot']
-            plot_genre = data['Plot']
-            plot_genre = contractions.fix(plot_genre)
-            plot_genre = word_cleaner(plot_genre)
-            plot_genre = remove_stopwords(plot_genre)
-            plot_vec_genre_pred = tfidf_vec.transform([plot_genre])    
-            plot_predict_genre = classifier.predict_proba(plot_vec_genre_pred)
-            plot_predict_genre_new = (plot_predict_genre >= 0.45).astype(int)
-            predicted_genres = list(multilabel_binarizer.inverse_transform(plot_predict_genre_new)[0])
-            predicted_scores = plot_predict_genre[plot_predict_genre >= 0.45].tolist()
-            predicted_scores = [round(i, 3) for i in predicted_scores]
-        
-            if predicted_genres == []:
-                print('No genre predicted.')
-                print('Finding similar movies.')
-            else:
-                result = pd.DataFrame({'Predicted Genre':predicted_genres,'Predicted Genre Score':predicted_scores})
-                result = result.sort_values('Predicted Genre Score', ascending = False).reset_index().drop('index', axis = 1)
-                print(result)
-                print()
-                print('Genres predicted. Finding similar movies in database.')
-                print()  
-                
-                plot = contractions.fix(data['Plot'])
-                plot = word_cleaner(data['Plot'])
-                plot = remove_stopwords(data['Plot']) 
-                
-            if len(plot_input) < 25:
-                result = pd.DataFrame({'a':[1]})
-                similar_movies = "Hello There!"
-                put_text("Not enough words in your plot. Try again!")
-                actions(buttons=["Refresh the page"])
-                pywebio.session.run_js('window.location.reload()')
-                raise fragile.Break
-                return(result, similar_movies)
-        
-    
-            plot_vec = vectorizer2.transform([plot])   
+    #titles = movie_ratings['primaryTitle'].values.tolist()
+    #titles.append(" ")
+    data = input_group("You can either input your own plot or the title of a movie", [textarea("Movie plot summary goes here! (25 character minimum)", required = False, name = "Plot"), input("Or type in an 80's movie title! (Case sensitive - must match IMDb title)", name = "Title", required = False)])
+    #data = input_group("You can either input your own plot or the title of a movie", [textarea("Movie plot summary goes here! (25 character minimum)", required = False, name = "Plot"), select("Or select an 80's movie title!", name = "Title", required = False, options = np.sort(titles), help_text = "Hint: Try typing to search for a movie", value = " ")])
 
-            plot_pred = KNN.predict_proba(plot_vec)   
+    if((data["Plot"] != "") and (data["Title"] == "")):
+
+        result = pd.DataFrame({'Predicted Genre':[],'Predicted Genre Score':[]})
+        similar_movies = pd.DataFrame({'Similar Movies':[], 'Genres':[], 'Year':[], 'Rating':[]})
         
-            for i in range(len(plot_pred)):
-                if plot_pred[i][0][0] != 1:
-                    plot_pred[i][0] = np.array([0,1])
-                else:
-                    plot_pred[i][0] = np.array([1,0])
-        
-            tmp = []
-            for j in plot_pred:
-                if (j == np.array([0,1]))[0][0]:
-                    tmp.append(1)
-                else:
-                    tmp.append(0)
-        
-            tmp = np.reshape(np.array(tmp), (1, np.array(tmp).shape[0]))
-            ids = list(multilabel_binarizer_similar.inverse_transform(np.array(tmp))[0])
+        plot_input = data['Plot']
+        plot_genre = data['Plot']
+        plot_genre = contractions.fix(plot_genre)
+        plot_genre = word_cleaner(plot_genre)
+        plot_genre = remove_stopwords(plot_genre)
+        plot_vec_genre_pred = tfidf_vec.transform([plot_genre])    
+        plot_predict_genre = classifier.predict_proba(plot_vec_genre_pred)
+        plot_predict_genre_new = (plot_predict_genre >= 0.45).astype(int)
+        predicted_genres = list(multilabel_binarizer.inverse_transform(plot_predict_genre_new)[0])
+        predicted_scores = plot_predict_genre[plot_predict_genre >= 0.45].tolist()
+        predicted_scores = [round(i, 3) for i in predicted_scores]
+    
+        if predicted_genres == []:
+            print('No genre predicted.')
+            print('Finding similar movies.')
+        else:
+            result = pd.DataFrame({'Predicted Genre':predicted_genres,'Predicted Genre Score':predicted_scores})
+            result = result.sort_values('Predicted Genre Score', ascending = False).reset_index().drop('index', axis = 1)
+            print(result)
+            print()
+            print('Genres predicted. Finding similar movies in database.')
+            print()  
             
+            plot = contractions.fix(data['Plot'])
+            plot = word_cleaner(data['Plot'])
+            plot = remove_stopwords(data['Plot']) 
+            
+        if len(plot_input) < 25:
+            result = pd.DataFrame({'a':[1]})
+            similar_movies = "Hello There!"
+            put_text("Not enough words in your plot. Try again!")
+            actions(buttons=["Refresh the page"])
+            pywebio.session.run_js('window.location.reload()')
+            return(result, similar_movies)
+    
+
+        plot_vec = vectorizer2.transform([plot])   
+
+        plot_pred = KNN.predict_proba(plot_vec)   
+    
+        for i in range(len(plot_pred)):
+            if plot_pred[i][0][0] != 1:
+                plot_pred[i][0] = np.array([0,1])
+            else:
+                plot_pred[i][0] = np.array([1,0])
+    
+        tmp = []
+        for j in plot_pred:
+            if (j == np.array([0,1]))[0][0]:
+                tmp.append(1)
+            else:
+                tmp.append(0)
+    
+        tmp = np.reshape(np.array(tmp), (1, np.array(tmp).shape[0]))
+        ids = list(multilabel_binarizer_similar.inverse_transform(np.array(tmp))[0])
+        
+        names = []
+        genre = []
+        year = []
+        rating = []
+        for p in ids:
+            for q in range(len(movie_ratings['tconst'])):
+                if p == movie_ratings['tconst'][q]:
+                    names.append(movie_ratings['primaryTitle'][q])
+                    genre.append(movie_ratings['genres'][q])
+                    year.append(movie_ratings['startYear'][q])
+                    rating.append(movie_ratings['averageRating'][q])
+                
+        if names == []:
+            popup("Predictions", [put_text("Genres that fir your plot."), put_text("There are no movies that fit your plot. Try again!")], closable = True)
+            actions(buttons=["Refresh the page"])
+            pywebio.session.run_js('window.location.reload()')
+            return(result, similar_movies)
+        else:
+            similar_movies = pd.DataFrame({'Similar Movies':names, 'Genres':genre, 'Year':year, 'Rating':rating})
+            print(similar_movies)
+            popup("Predictions", [put_text("Genres that fit your plot:"), put_table(tdata = result.values.tolist(),header = ['Predicted Genre', 'Predicted Genre Score (Out of 1)']), put_text("Here are some movies that fit your plot:"), put_table(tdata = similar_movies.values.tolist(), header = ['Similar Movies', 'Genres', 'Year', 'Rating'])], closable = True)
+            actions(buttons=["Refresh the page"])
+            pywebio.session.run_js('window.location.reload()')
+            return(result, similar_movies)
+    
+    elif((data["Plot"] == "") and (data["Title"] != "")):
+        title=data['Title']
+        if(movie_ratings[movie_ratings['primaryTitle'] == title].shape[0] > 1):
+            popup(f"There is more than one movie with the title {title}. Please specify the year!")
+            startYear = select(options = movie_ratings[movie_ratings['primaryTitle'] == title]['startYear'])
+            idx = movie_ratings[(movie_ratings['primaryTitle'] == title) & (movie_ratings['startYear'] == startYear)].index[0]
+            score_series = pd.Series(cos_sim[idx]).sort_values(ascending = False)
+            top_index = list(score_series.iloc[1:6].index)
             names = []
             genre = []
             year = []
             rating = []
-            for p in ids:
-                for q in range(len(movie_ratings['tconst'])):
-                    if p == movie_ratings['tconst'][q]:
-                        names.append(movie_ratings['primaryTitle'][q])
-                        genre.append(movie_ratings['genres'][q])
-                        year.append(movie_ratings['startYear'][q])
-                        rating.append(movie_ratings['averageRating'][q])
-                    
-            if names == []:
-                popup("Predictions", [put_text("Genres that fir your plot."), put_text("There are no movies that fit your plot. Try again!")], closable = True)
-                actions(buttons=["Refresh the page"])
-                pywebio.session.run_js('window.location.reload()')
-                raise fragile.Break
-                return(result, similar_movies)
-            else:
-                similar_movies = pd.DataFrame({'Similar Movies':names, 'Genres':genre, 'Year':year, 'Rating':rating})
-                print(similar_movies)
-                popup("Predictions", [put_text("Genres that fit your plot:"), put_table(tdata = result.values.tolist(),header = ['Predicted Genre', 'Predicted Genre Score (Out of 1)']), put_text("Here are some movies that fit your plot:"), put_table(tdata = similar_movies.values.tolist(), header = ['Similar Movies', 'Genres', 'Year', 'Rating'])], closable = True)
-                actions(buttons=["Refresh the page"])
-                pywebio.session.run_js('window.location.reload()')
-                raise fragile.Break
-                return(result, similar_movies)
-        
-        elif((data["Plot"] == "") and (data["Title"] != "")):
-            title=data['Title']
-            if(movie_ratings[movie_ratings['primaryTitle'] == title].shape[0] > 1):
-                popup(f"There is more than one movie with the title {title}. Please specify the year!")
-                startYear = select(options = movie_ratings[movie_ratings['primaryTitle'] == title]['startYear'])
-                idx = movie_ratings[(movie_ratings['primaryTitle'] == title) & (movie_ratings['startYear'] == startYear)].index[0]
+            for i in top_index:
+                names.append(list(movie_ratings['primaryTitle'])[i])
+                genre.append(list(movie_ratings['genres'])[i])
+                year.append(list(movie_ratings['startYear'])[i])
+                rating.append(list(movie_ratings['averageRating'])[i])
+            recommended_movies = pd.DataFrame({"Similar Movies":names, "Genres":genre, "Year":year, "Rating":rating})
+            popup(f"Similar Movies to {data['Title']}:", put_table(tdata = recommended_movies.values.tolist(), header = ["Similar Movies", "Genres", "Year", "Rating"]))
+            actions(buttons=["Refresh the page"])
+            pywebio.session.run_js('window.location.reload()')
+            return recommended_movies
+        else:
+            names = []
+            genre = []
+            year = []
+            rating = []
+            if(title in list(indices)):
+                idx = indices[indices == title].index[0]
                 score_series = pd.Series(cos_sim[idx]).sort_values(ascending = False)
                 top_index = list(score_series.iloc[1:6].index)
-                names = []
-                genre = []
-                year = []
-                rating = []
                 for i in top_index:
                     names.append(list(movie_ratings['primaryTitle'])[i])
                     genre.append(list(movie_ratings['genres'])[i])
@@ -177,43 +190,32 @@ def movie_predictor():
                 pywebio.session.run_js('window.location.reload()')
                 return recommended_movies
             else:
-                names = []
-                genre = []
-                year = []
-                rating = []
-                if(title in list(indices)):
-                    idx = indices[indices == title].index[0]
-                    score_series = pd.Series(cos_sim[idx]).sort_values(ascending = False)
-                    top_index = list(score_series.iloc[1:6].index)
-                    for i in top_index:
-                        names.append(list(movie_ratings['primaryTitle'])[i])
-                        genre.append(list(movie_ratings['genres'])[i])
-                        year.append(list(movie_ratings['startYear'])[i])
-                        rating.append(list(movie_ratings['averageRating'])[i])
-                    recommended_movies = pd.DataFrame({"Similar Movies":names, "Genres":genre, "Year":year, "Rating":rating})
-                    popup(f"Similar Movies to {data['Title']}:", put_table(tdata = recommended_movies.values.tolist(), header = ["Similar Movies", "Genres", "Year", "Rating"]))
-                    actions(buttons=["Refresh the page"])
-                    pywebio.session.run_js('window.location.reload()')
-                    return recommended_movies
-                else:
-                    recommended_movies = pd.DataFrame({"Similar Movies":["nothing"]})
-                    put_text("That title is not in the database. Try again!")
-                    actions(buttons=["Refresh the page"])
-                    pywebio.session.run_js('window.location.reload()')
-                    return recommended_movies
-                    
-        elif((data["Plot"] != "") and (data["Title"] != "")):
-            put_text("You have to choose either a plot or title input. Not both!")
-            actions(buttons=["Refresh the page"])
-            pywebio.session.run_js('window.location.reload()')
-            raise fragile.Break
-        else:
-            put_text("No input found. Try again!")
-            actions(buttons=["Refresh the page"])
-            pywebio.session.run_js('window.location.reload()')
-            raise fragile.Break
+                recommended_movies = pd.DataFrame({"Similar Movies":["nothing"]})
+                put_text("That title is not in the database. Try again!")
+                actions(buttons=["Refresh the page"])
+                pywebio.session.run_js('window.location.reload()')
+                return recommended_movies
+                
+    elif((data["Plot"] != "") and (data["Title"] != "")):
+        put_text("You have to choose either a plot or title input. Not both!")
+        actions(buttons=["Refresh the page"])
+        pywebio.session.run_js('window.location.reload()')
+    else:
+        put_text("No input found. Try again!")
+        actions(buttons=["Refresh the page"])
+        pywebio.session.run_js('window.location.reload()')
+            
+if(__name__ == '__main__'):
+    import argparse
+    from pywebio.platform.tornado_http import start_server as start_http_server
+    from pywebio import start_server as start_ws_server
     
-
-if __name__ == '__main__':
-    movie_predictor()
-    app.run(host="127.0.0.1", port=8080, debug=False)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-p", "--port", type=int, default=8080)
+    parser.add_argument("--http", action="store_true", default=False, help='Whether to enable http protocol for communicates')
+    args = parser.parse_args()
+    
+    if args.http:
+        start_http_server(movie_predictor, port=args.port)
+    else:
+        start_ws_server(movie_predictor, port=args.port, websocket_ping_interval=30)
