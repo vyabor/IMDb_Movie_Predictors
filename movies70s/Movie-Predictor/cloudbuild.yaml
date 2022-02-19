@@ -1,0 +1,16 @@
+steps:
+  # Docker Build
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'us.gcr.io/movies-preds-70s/app-engine-tmp/app/default/ttl-18h', '.']
+    timeout: 10000s
+
+  # Docker Push
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us.gcr.io/movies-preds-70s/app-engine-tmp/app/default/ttl-18h']
+    timeout: 10000s
+
+  # Entrypoint, timeout and environment variables
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args: ['run', 'deploy', 'movie-predictor-70s', '--image', 'us.gcr.io/movies-preds-70s/app-engine-tmp/app/default/ttl-18h', '--region', 'us-east1']
+    timeout: 10000s
