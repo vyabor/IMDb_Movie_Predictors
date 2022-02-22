@@ -7,7 +7,7 @@
 
 NOTE: the scrapy bot will take awhile to run. Going faster than its current settings risks a temporary IP ban from IMDb
 
-5. If you do not want to run the scrapy bot, then download the movie_plots.csv file from https://drive.google.com/drive/folders/135Y7-z4o0ASXgV9Geg4itWNJtNKWq-fe?usp=sharing and place it in IMDb-Scraper/bot directory for your chosen decade
+5. If you do not want to run the scrapy bot, the movie_plots.csv files are already included in the repo
 6. Navigate to the Movie-Pickler/src folder of the same decade you chose and run main.py
 7. Navigate to the Movie-Predictor folder for your decade and run main.py
 8. Congrats! You're running a movie predictor webapp locally!

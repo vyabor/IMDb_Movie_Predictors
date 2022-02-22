@@ -48,9 +48,12 @@ def movie_predictor():
     put_text("")
     put_link("90s", "https://movie-predictor-90s-xxqp3o6xna-ue.a.run.app", new_window = True)
     put_text("")
-    put_link("2010's", "https://movie-predictor-00s-yxpwksz6pa-ue.a.run.app", new_window = True)
+    put_link("2000's", "https://movie-predictor-00s-yxpwksz6pa-ue.a.run.app", new_window = True)
     put_text("")
     put_link("2010's", "https://movie-predictor-10s-7sycrvxa2a-ue.a.run.app", new_window = True)
+    put_text("")
+    put_link("All Decades", "https://movie-predictor-bdym5mncmq-ue.a.run.app", new_window = True)
+    put_text("")
     put_text("© 2022 Vincent Yabor")
     
     data = input_group("You can either input your own plot or the title of a 2010's movie", [textarea("Movie plot summary goes here! (25 character minimum)", required = False, name = "Plot"), input("Or type in a 2010's movie title! (Case sensitive - must match IMDb title)", name = "Title", required = False)])
