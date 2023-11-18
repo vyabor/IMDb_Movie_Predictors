@@ -54,7 +54,7 @@ def movie_predictor():
     put_text("")
     put_link("All Decades", "https://movie-predictor-bdym5mncmq-ue.a.run.app", new_window = True)
     put_text("")
-    put_text("© 2022 Vincent Yabor")
+    put_text("2023 Vincent Yabor")
     
     data = input_group("You can either input your own plot or the title of a 70's movie", [textarea("Movie plot summary goes here! (25 character minimum)", required = False, name = "Plot"), input("Or type in a 70's movie title! (Case sensitive - must match IMDb title)", name = "Title", required = False)])
 
@@ -92,7 +92,7 @@ def movie_predictor():
             
         if len(plot_input) < 25:
             result = pd.DataFrame({'a':[1]})
-            similar_movies = "Hello There!"
+            similar_movies = ""
             put_text("Not enough words in your plot. Try again!")
             actions(buttons=["Refresh the page"])
             pywebio.session.run_js('window.location.reload()')
@@ -124,8 +124,8 @@ def movie_predictor():
         year = []
         rating = []
         for p in ids:
-            for q in range(len(movie_ratings['tconst'])):
-                if p == movie_ratings['tconst'][q]:
+            for q in range(len(movie_ratings['ids'])):
+                if p == movie_ratings['ids'][q]:
                     names.append(movie_ratings['primaryTitle'][q])
                     genre.append(movie_ratings['genres'][q])
                     year.append(movie_ratings['startYear'][q])
@@ -173,8 +173,8 @@ def movie_predictor():
             year = []
             rating = []
             for p in ids:
-                for q in range(len(movie_ratings['tconst'])):
-                    if p == movie_ratings['tconst'][q]:
+                for q in range(len(movie_ratings['ids'])):
+                    if p == movie_ratings['ids'][q]:
                         names.append(movie_ratings['primaryTitle'][q])
                         genre.append(movie_ratings['genres'][q])
                         year.append(movie_ratings['startYear'][q])
@@ -210,8 +210,8 @@ def movie_predictor():
             year = []
             rating = []
             for p in ids:
-                for q in range(len(movie_ratings['tconst'])):
-                    if p == movie_ratings['tconst'][q]:
+                for q in range(len(movie_ratings['ids'])):
+                    if p == movie_ratings['ids'][q]:
                         names.append(movie_ratings['primaryTitle'][q])
                         genre.append(movie_ratings['genres'][q])
                         year.append(movie_ratings['startYear'][q])

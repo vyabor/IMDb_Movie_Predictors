@@ -1,4 +1,4 @@
-## This is a tool I have built for running a python webapp locally on a PC. This webapp predicts genres and similar movies based on a given movie plot summary input
+## This local webapp predicts genres and similar movies based on a given movie plot summary input
 ## Requires Python 3.12
 
 1. Open a command prompt window and run the following: python -m pip install -r 'requirements.txt'

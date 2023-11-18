@@ -1,82 +1,32 @@
 import pandas as pd
 import contractions
 import re
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.linear_model import SGDClassifier
-from sklearn.metrics import f1_score,precision_score,recall_score,accuracy_score,hamming_loss
-from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.neighbors import KNeighborsClassifier
 from gensim.parsing.preprocessing import remove_stopwords
 import pickle
+import os
 
-meta = pd.read_csv('../../../data.tsv', sep = '\t')
-meta = meta[(meta['titleType'] != 'short') & (meta['titleType'] != 'tvEpisode') & (meta['titleType'] != 'tvShort') & (meta['titleType'] != 'video') & (meta['titleType'] != 'videoGame')]
+abspath = os.path.abspath(__file__)
+dname = os.path.dirname(abspath)
+os.chdir(dname)
 
-meta = meta[meta['genres'].notna()]
-
-meta = meta[meta['genres'] != "\\N"]
-
-meta = meta.reset_index()
-meta = meta.drop('index', axis = 1)
+movie_ratings = pd.read_csv(f'{dname}/movie_plots_merged.csv')
 
 Genres = []
-for i in range(len(meta['genres'])):
-    Genres.append(meta['genres'][i].split(','))
+for i in range(len(movie_ratings['genres'])):
+    Genres.append(movie_ratings['genres'][i].split(','))
 
-meta['genres'] = Genres
-meta_movies = meta[meta['titleType'] == 'movie']
-
-meta_movies = meta_movies.reset_index()
-meta_movies = meta_movies.drop('index', axis = 1)
-
-meta_movies = meta_movies[meta_movies['startYear'] != "\\N"]
-meta_movies = meta_movies.reset_index()
-meta_movies = meta_movies.drop('index', axis=1)
-
-meta_movies['startYear'] = [int(meta_movies['startYear'][i]) for i in range(len(meta_movies['startYear']))]
-
-meta_movies = meta_movies[meta_movies['startYear'] >= 1970]
-meta_movies = meta_movies.reset_index()
-meta_movies = meta_movies.drop('index', axis=1)
-
-ratings = pd.read_csv('../../../ratings.tsv', sep = '\t')
-
-movie_ratings = meta_movies.merge(ratings, on = 'tconst')
-movie_ratings = movie_ratings[movie_ratings['numVotes'] > 1500]
-movie_ratings = movie_ratings.reset_index(drop=True)
-
-movie_ids_all = movie_ratings['tconst']
-
-movie_plts = pd.read_csv('../../IMDb-Scraper/bot/movie_plots.csv')
-plots = []
-for i in movie_plts['movie_plots']:
-    plots.append(str(i))
-
-movie_ratings = movie_ratings.head(len(plots))
-
-movie_ratings['plots'] = plots
-
-plots_new = []
-for i in range(movie_ratings.shape[0]):
-    plots_new.append(re.findall(r"^(?!\bIt looks like we don't have\b).+",movie_ratings['plots'][i]))
-
-movie_ratings['plots_new'] = plots_new
-
-movie_ratings = movie_ratings[movie_ratings['plots_new'].str.len() > 0]
-
-movie_ratings = movie_ratings.drop('plots_new', axis = 1)
-
-movie_ratings = movie_ratings.reset_index()
-movie_ratings = movie_ratings.drop('index', axis = 1)
+movie_ratings['genres'] = Genres
 
 multilabel_binarizer = MultiLabelBinarizer()
 multilabel_binarizer.fit(movie_ratings['genres'])
-y = multilabel_binarizer.transform(movie_ratings['genres'])
+y_genres = multilabel_binarizer.transform(movie_ratings['genres'])
 
-movie_ratings['plots_clean'] = movie_ratings['plots'].apply(contractions.fix)
+movie_ratings['plots_clean'] = movie_ratings['movie_plots'].apply(contractions.fix)
 
 def word_cleaner(text):
     text = re.sub('[0-9]nd|[0-9]st|[0-9]rd|[0-9]th+','',text)
@@ -89,39 +39,22 @@ def word_cleaner(text):
 movie_ratings['plots_clean'] = movie_ratings['plots_clean'].apply(word_cleaner)
 movie_ratings['plots_clean'] = movie_ratings['plots_clean'].apply(remove_stopwords)
 
-x = movie_ratings['plots_clean']
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size = 0.2, random_state = 20)
-
-tfidf_vec=TfidfVectorizer(max_df = 0.3, ngram_range = (1,2))
-x_train_vec = tfidf_vec.fit_transform(x_train)
-x_test_vec = tfidf_vec.transform(x_test)
-
-classifier = OneVsRestClassifier(SGDClassifier(max_iter = 10000, loss = 'log', penalty = 'l2', alpha = 0.0001, class_weight = 'balanced', n_jobs = -1, random_state = 20), n_jobs = -1)
-classifier.fit(x_train_vec, y_train)
+X_plot = movie_ratings['plots_clean']
 
 multilabel_binarizer_similar = MultiLabelBinarizer()
-Y = [[movie_ratings['tconst'][i]] for i in range(len(movie_ratings['tconst']))]
-Y = multilabel_binarizer_similar.fit_transform(Y)
-x = movie_ratings['plots_clean']
-vectorizer2 = TfidfVectorizer(ngram_range=(2,3))
-x_names = vectorizer2.fit_transform(x)
-KNN = KNeighborsClassifier(5, n_jobs = -1, metric = 'cosine')
-KNN.fit(x_names, Y)
+y = [[movie_ratings['ids'][i]] for i in range(len(movie_ratings['ids']))]
+y = multilabel_binarizer_similar.fit_transform(y)
 
-preds_log = classifier.predict_proba(x_test_vec)
-preds_new = (preds_log >= 0.45).astype(int)
-tmp = multilabel_binarizer.inverse_transform(preds_new)
-y_test_tmp = multilabel_binarizer.inverse_transform(y_test)
-print('Accuracy:', accuracy_score(y_test,preds_new))
-print('Hamming Loss:', hamming_loss(y_test,preds_new))
-print()
-print('Micro Precision:', precision_score(y_test, preds_new, average = 'micro'))
-print('Micro Recall:', recall_score(y_test, preds_new, average = 'micro'))
-print('Micro F1:', f1_score(y_test, preds_new, average = 'micro'))
-print()
-print('Macro Precision:', precision_score(y_test, preds_new, average = 'macro'))
-print('Macro Recall:', recall_score(y_test, preds_new, average = 'macro'))
-print('Macro F1:', f1_score(y_test, preds_new, average = 'macro'))
+vectorizer2 = TfidfVectorizer(ngram_range = (2,3))
+X_names = vectorizer2.fit_transform(X_plot)
+KNN = KNeighborsClassifier(5, n_jobs = -1, metric = 'cosine')
+KNN.fit(X_names, y)
+
+tfidf_vec=TfidfVectorizer(max_df = 0.3, ngram_range = (1,2))
+X_vec = tfidf_vec.fit_transform(X_plot)
+
+classifier = OneVsRestClassifier(SGDClassifier(max_iter = 10000, loss = 'log_loss', penalty = 'l2', alpha = 0.0001, class_weight = 'balanced', n_jobs = -1, random_state = 20), n_jobs = -1)
+classifier.fit(X_vec, y_genres)
 
 filename = '../../Movie-Predictor/static/tfidf_vec.pickle'
 pickle.dump(tfidf_vec, open(filename, 'wb'))
